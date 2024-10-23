@@ -146,8 +146,6 @@ app.post('/webhook', async (req, res) => {
     //     return res.status(403).send('Signature mismatch!');
     // }
 
-    console.log("Received a webhook event!", req.body);
-
     // Check if project_node_id matches the predefined one
     const projectNodeId = req.body.projects_v2_item?.project_node_id;
     if (projectNodeId !== PROJECT_NODE_ID) {
