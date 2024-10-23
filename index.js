@@ -68,20 +68,28 @@ async function getIssueDetails(contentNodeId) {
 
 // Function to update the issue body by appending text
 async function updateIssueBody(issueUrl, newBodyContent) {
+    // Extract the issue number and repository from the issue URL
+    const issueUrlParts = issueUrl.split('/');
+    const owner = issueUrlParts[4];  // owner part of the URL
+    const repo = issueUrlParts[5];   // repository part of the URL
+    const issueNumber = issueUrlParts[7];  // issue number part of the URL
+
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
+
     try {
         const response = await axios.patch(
-            issueUrl,
+            apiUrl,
             { body: newBodyContent },
             {
                 headers: {
-                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                    'Authorization': `token ${GITHUB_TOKEN}`,  // Use 'token' for the authorization header
                     'Content-Type': 'application/json'
                 }
             }
         );
         console.log(`Issue body updated successfully: ${response.data.url}`);
     } catch (error) {
-        console.error('Error updating issue body:', error);
+        console.error('Error updating issue body:', error.response ? error.response.data : error.message);
     }
 }
 
