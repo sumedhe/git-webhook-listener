@@ -22,6 +22,10 @@ function verifySignature(req) {
     return signature === digest;
 }
 
+app.get('/', (req, res) => {
+    res.send('GitHub Webhook Receiver');
+});
+
 // GitHub webhook receiver endpoint
 app.post('/webhook', (req, res) => {
     // Verify the GitHub signature
