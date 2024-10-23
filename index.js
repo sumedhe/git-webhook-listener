@@ -29,23 +29,23 @@ app.get('/', (req, res) => {
 // GitHub webhook receiver endpoint
 app.post('/webhook', (req, res) => {
     // Verify the GitHub signature
-    if (!verifySignature(req)) {
-        console.log('Signature mismatch!');
-        return res.status(403).send('Signature mismatch!');
-    }
+    // if (!verifySignature(req)) {
+    //     console.log('Signature mismatch!');
+    //     return res.status(403).send('Signature mismatch!');
+    // }
 
     // Get the event type from GitHub's headers
-    const event = req.headers['x-github-event'];
+    // const event = req.headers['x-github-event'];
 
     // Log the event for debugging
     console.log(`Received event: ${event}`);
     console.log('Payload:', req.body);
 
     // Do something with the webhook payload here
-    if (event === 'push') {
-        console.log('Received a push event!');
-        // Handle push event
-    }
+    // if (event === 'push') {
+    //     console.log('Received a push event!');
+    //     // Handle push event
+    // }
 
     // Respond with success
     res.status(200).send('Webhook received!');
