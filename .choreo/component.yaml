@@ -1,0 +1,9 @@
+version: 0.1
+
+endpoints:
+  - name: Test Endpoint
+    port: 8080
+    type: REST
+    networkVisibility: Public
+    context: /webhook
+    schemaFilePath: openapi.yaml
