@@ -2,8 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const axios = require('axios'); // Using axios for API requests
-
-const APPEND_TEXT = '\nThis is the text to append.'; // Text to append to the issue
+const fs = require('fs'); // File system module to read the checklist file
 
 // Load environment variables from .env file (optional)
 require('dotenv').config();
@@ -18,6 +17,7 @@ app.use(bodyParser.json());
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // GitHub token for API requests
 const PROJECT_NODE_ID = process.env.PROJECT_NODE_ID; // Predefined project_node_id
+const CHECKLIST_FILE = 'checklist.md'; // Path to your checklist file
 
 // Function to verify the signature
 function verifySignature(req) {
@@ -68,6 +68,21 @@ async function getIssueDetails(contentNodeId) {
     }
 }
 
+// Function to read the checklist file
+function readChecklist() {
+    try {
+        const content = fs.readFileSync(CHECKLIST_FILE, 'utf-8');
+        const lines = content.split('\n');
+        return {
+            firstLine: lines[0], // The first line of the file
+            fullContent: content, // The entire content of the file
+        };
+    } catch (error) {
+        console.error('Error reading checklist file:', error);
+        return null;
+    }
+}
+
 // Function to update the issue body by appending text
 async function updateIssueBody(issueUrl, newBodyContent) {
     // Extract the issue number and repository from the issue URL
@@ -91,20 +106,25 @@ async function updateIssueBody(issueUrl, newBodyContent) {
         const existingBody = issueResponse.data.body || '';
         console.log('Existing issue body:', existingBody);
 
-        // Create the updated body
-        const updatedBody = existingBody + APPEND_TEXT;
+        // Append new checklist content only if the first line does not exist
+        const checklist = readChecklist();
+        if (checklist && !existingBody.includes(checklist.firstLine)) {
+            const updatedBody = existingBody + '<br/><br/>' + checklist.fullContent;
 
-        // Update the issue with the new body
-        await axios.patch(url, {
-            body: updatedBody
-        }, {
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
+            // Update the issue with the new body
+            await axios.patch(url, {
+                body: updatedBody
+            }, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
 
-        console.log('Issue updated successfully!');
+            console.log('Issue updated successfully with checklist!');
+        } else {
+            console.log('Checklist already exists in the issue body, not updating.');
+        }
     } catch (error) {
         console.error('Error updating the issue:', error.response ? error.response.data : error.message);
     }
@@ -144,11 +164,8 @@ app.post('/webhook', async (req, res) => {
         if (issueDetails && issueDetails.url) {
             console.log(`Issue URL: ${issueDetails.url}`);
 
-            // Append new text to the issue body
-            const newBodyContent = `${issueDetails.body}\n\n**Automated Update:** Text appended to issue.`;
-
-            // Update the issue body
-            await updateIssueBody(issueDetails.url, newBodyContent);
+            // Update the issue body with the checklist content
+            await updateIssueBody(issueDetails.url, issueDetails.body);
         } else {
             console.log('Could not fetch issue details');
         }
