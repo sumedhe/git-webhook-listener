@@ -109,7 +109,9 @@ async function updateIssueBody(issueUrl, newBodyContent) {
         // Append new checklist content only if the first line does not exist
         const checklist = readChecklist();
         if (checklist && !existingBody.includes(checklist.firstLine)) {
-            const updatedBody = existingBody + '<br/><br/>' + checklist.fullContent;
+            const updatedBody = `${existingBody}
+
+            ${checklist.fullContent}`;
 
             // Update the issue with the new body
             await axios.patch(url, {
@@ -154,6 +156,13 @@ app.post('/webhook', async (req, res) => {
 
     // Extract content_node_id from the webhook payload
     const contentNodeId = req.body.projects_v2_item?.content_node_id;
+    const action = req.body.action; // Get the action from the payload
+
+    // Check if the action is 'created'
+    if (action !== 'created') {
+        console.log(`No action taken because the action is not 'created': ${action}`);
+        return res.status(200).send('No action taken for non-created action.');
+    }
 
     if (contentNodeId) {
         console.log(`Found content_node_id: ${contentNodeId}`);
