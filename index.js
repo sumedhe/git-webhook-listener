@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const axios = require('axios'); // Using axios now!
+const axios = require('axios'); // Using axios for API requests
 
 // Load environment variables from .env file (optional)
 require('dotenv').config();
@@ -15,6 +15,7 @@ app.use(bodyParser.json());
 // Get the webhook secret and GitHub token from environment variables
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // GitHub token for API requests
+const PROJECT_NODE_ID = process.env.PROJECT_NODE_ID; // Predefined project_node_id
 
 // Function to verify the signature
 function verifySignature(req) {
@@ -24,13 +25,14 @@ function verifySignature(req) {
     return signature === digest;
 }
 
-// Function to get issue URL from content_node_id using GraphQL
-async function getIssueUrl(contentNodeId) {
+// Function to get issue URL and body from content_node_id using GraphQL
+async function getIssueDetails(contentNodeId) {
     const query = `
         query($id: ID!) {
             node(id: $id) {
                 ... on Issue {
                     url
+                    body
                 }
             }
         }
@@ -53,14 +55,33 @@ async function getIssueUrl(contentNodeId) {
 
         const data = response.data;
         if (data.errors) {
-            console.error('Error fetching issue URL:', data.errors);
+            console.error('Error fetching issue details:', data.errors);
             return null;
         }
 
-        return data.data.node ? data.data.node.url : null;
+        return data.data.node ? { url: data.data.node.url, body: data.data.node.body } : null;
     } catch (error) {
         console.error('Error during GraphQL request:', error);
         return null;
+    }
+}
+
+// Function to update the issue body by appending text
+async function updateIssueBody(issueUrl, newBodyContent) {
+    try {
+        const response = await axios.patch(
+            issueUrl,
+            { body: newBodyContent },
+            {
+                headers: {
+                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        console.log(`Issue body updated successfully: ${response.data.url}`);
+    } catch (error) {
+        console.error('Error updating issue body:', error);
     }
 }
 
@@ -79,26 +100,39 @@ app.post('/webhook', async (req, res) => {
 
     console.log("Received a webhook event!", req.body);
 
+    // Check if project_node_id matches the predefined one
+    const projectNodeId = req.body.projects_v2_item?.project_node_id;
+    if (projectNodeId !== PROJECT_NODE_ID) {
+        console.log('project_node_id does not match. No action taken.');
+        return res.status(200).send('No action taken.');
+    }
+
     // Extract content_node_id from the webhook payload
     const contentNodeId = req.body.projects_v2_item?.content_node_id;
 
     if (contentNodeId) {
         console.log(`Found content_node_id: ${contentNodeId}`);
 
-        // Fetch the issue URL using the content_node_id
-        const issueUrl = await getIssueUrl(contentNodeId);
+        // Fetch the issue URL and body using the content_node_id
+        const issueDetails = await getIssueDetails(contentNodeId);
 
-        if (issueUrl) {
-            console.log(`Issue URL: ${issueUrl}`);
+        if (issueDetails && issueDetails.url) {
+            console.log(`Issue URL: ${issueDetails.url}`);
+
+            // Append new text to the issue body
+            const newBodyContent = `${issueDetails.body}\n\n**Automated Update:** Text appended to issue.`;
+
+            // Update the issue body
+            await updateIssueBody(issueDetails.url, newBodyContent);
         } else {
-            console.log('Could not fetch issue URL');
+            console.log('Could not fetch issue details');
         }
     } else {
         console.log('content_node_id not found in the webhook payload');
     }
 
     // Respond with success
-    res.status(200).send('Webhook received!');
+    res.status(200).send('Webhook received and processed!');
 });
 
 // Start the server
