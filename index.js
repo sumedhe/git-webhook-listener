@@ -86,6 +86,7 @@ async function updateIssueBody(issueUrl, newBodyContent) {
         });
 
         const existingBody = issueResponse.data.body || '';
+        console.log('Existing issue body:', existingBody);
 
         // Create the updated body
         const updatedBody = existingBody + APPEND_TEXT;
