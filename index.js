@@ -77,8 +77,11 @@ async function updateIssueBody(issueUrl, newBodyContent) {
     const issueNumber = issueUrlParts[7];  // issue number part of the URL
 
     try {
+        const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
+        console.log('Updating issue at:', url);
+
         // Fetch the existing issue data
-        const issueResponse = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
+        const issueResponse = await axios.get(url, {
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json'
@@ -90,9 +93,6 @@ async function updateIssueBody(issueUrl, newBodyContent) {
 
         // Create the updated body
         const updatedBody = existingBody + APPEND_TEXT;
-
-        const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
-        console.log('Updating issue:', url);
 
         // Update the issue with the new body
         await axios.patch(url, {
