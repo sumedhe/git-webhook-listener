@@ -4,7 +4,7 @@ version: 0.1
 # +required List of endpoints to create
 endpoints:
   # +required Unique name for the endpoint. (This name will be used when generating the managed API)
-  - name: My Test Endpoint
+  - name: Books Test Endpoint
     # +required Numeric port value that gets exposed via this endpoint
     port: 8080
     # +required Type of the traffic this endpoint is accepting. Example: REST, GraphQL, etc.
@@ -18,5 +18,5 @@ endpoints:
     context: /webhook
     # +optional Path to the schema definition file. Defaults to wild card route if not provided
     # This is only applicable to REST endpoint types.
-    # The path should be relative to the docker context.
+    # The path should be relative to the nodeJS project directory.
     schemaFilePath: openapi.yaml
