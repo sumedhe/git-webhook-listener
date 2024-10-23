@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
+const fetch = require('node-fetch');
 
 // Load environment variables from .env file (optional)
 require('dotenv').config();
@@ -11,8 +12,9 @@ const PORT = process.env.PORT || 8080;
 // Middleware to parse JSON body
 app.use(bodyParser.json());
 
-// Get the webhook secret from environment variables
+// Get the webhook secret and GitHub token from environment variables
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // GitHub token for API requests
 
 // Function to verify the signature
 function verifySignature(req) {
@@ -22,33 +24,71 @@ function verifySignature(req) {
     return signature === digest;
 }
 
+// Function to get issue URL from content_node_id using GraphQL
+async function getIssueUrl(contentNodeId) {
+    const query = `
+        query($id: ID!) {
+            node(id: $id) {
+                ... on Issue {
+                    url
+                }
+            }
+        }
+    `;
+
+    const response = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        },
+        body: JSON.stringify({
+            query: query,
+            variables: { id: contentNodeId },
+        }),
+    });
+
+    const data = await response.json();
+    if (data.errors) {
+        console.error('Error fetching issue URL:', data.errors);
+        return null;
+    }
+
+    return data.data.node ? data.data.node.url : null;
+}
+
 app.get('/', (req, res) => {
     console.log('GET /');
     res.send('GitHub Webhook Receiver');
 });
 
 // GitHub webhook receiver endpoint
-app.post('/webhook', (req, res) => {
+app.post('/webhook', async (req, res) => {
     // Verify the GitHub signature
     // if (!verifySignature(req)) {
     //     console.log('Signature mismatch!');
     //     return res.status(403).send('Signature mismatch!');
     // }
 
-    // Get the event type from GitHub's headers
-    // const event = req.headers['x-github-event'];
+    console.log("Received a webhook event!", req.body);
 
-    // Log the event for debugging
-    // console.log(`Received event: ${event}`);
-    // console.log('Payload:', req.body);
+    // Extract content_node_id from the webhook payload
+    const contentNodeId = req.body.projects_v2_item?.content_node_id;
 
-    // Do something with the webhook payload here
-    // if (event === 'push') {
-    //     console.log('Received a push event!');
-    //     // Handle push event
-    // }
+    if (contentNodeId) {
+        console.log(`Found content_node_id: ${contentNodeId}`);
 
-    console.log("Received a push event!", req.body);
+        // Fetch the issue URL using the content_node_id
+        const issueUrl = await getIssueUrl(contentNodeId);
+
+        if (issueUrl) {
+            console.log(`Issue URL: ${issueUrl}`);
+        } else {
+            console.log('Could not fetch issue URL');
+        }
+    } else {
+        console.log('content_node_id not found in the webhook payload');
+    }
 
     // Respond with success
     res.status(200).send('Webhook received!');
