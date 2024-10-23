@@ -103,7 +103,7 @@ app.post('/webhook', async (req, res) => {
     // Check if project_node_id matches the predefined one
     const projectNodeId = req.body.projects_v2_item?.project_node_id;
     if (projectNodeId !== PROJECT_NODE_ID) {
-        console.log('project_node_id does not match. No action taken.');
+        console.log('project_node_id does not match. No action taken.', projectNodeId, PROJECT_NODE_ID);
         return res.status(200).send('No action taken.');
     }
 
