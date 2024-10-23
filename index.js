@@ -48,7 +48,7 @@ app.post('/webhook', (req, res) => {
     //     // Handle push event
     // }
 
-    console.log(req.body);
+    console.log(req);
 
     // Respond with success
     res.status(200).send('Webhook received!');
