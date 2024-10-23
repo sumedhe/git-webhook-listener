@@ -1,0 +1,60 @@
+openapi: 3.0.1
+info:
+  title: GitHub Webhook Receiver
+  description: A simple API to receive GitHub webhook events.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+paths:
+  /webhook:
+    post:
+      summary: Receives GitHub Webhook events
+      description: |
+        This endpoint receives webhook events from GitHub. It verifies the signature
+        using the `x-hub-signature-256` header and processes the event payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: The event payload sent by GitHub.
+      parameters:
+        - name: x-hub-signature-256
+          in: header
+          required: true
+          description: The HMAC hex digest to verify the payload.
+          schema:
+            type: string
+        - name: x-github-event
+          in: header
+          required: true
+          description: The type of event triggered by GitHub (e.g., push, pull_request).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook received successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Webhook received!
+        '403':
+          description: Invalid signature or forbidden access
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Signature mismatch!
+      security:
+        - webhookSecret: []
+components:
+  securitySchemes:
+    webhookSecret:
+      type: http
+      scheme: bearer
+      description: |
+        GitHub webhook secret for verifying the payload. The secret is passed in the
+        request headers via `x-hub-signature-256` and must be validated using HMAC SHA-256.
