@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const fetch = require('node-fetch');
+const axios = require('axios'); // Using axios now!
 
 // Load environment variables from .env file (optional)
 require('dotenv').config();
@@ -36,25 +36,32 @@ async function getIssueUrl(contentNodeId) {
         }
     `;
 
-    const response = await fetch('https://api.github.com/graphql', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        },
-        body: JSON.stringify({
-            query: query,
-            variables: { id: contentNodeId },
-        }),
-    });
+    try {
+        const response = await axios.post(
+            'https://api.github.com/graphql',
+            {
+                query: query,
+                variables: { id: contentNodeId },
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                },
+            }
+        );
 
-    const data = await response.json();
-    if (data.errors) {
-        console.error('Error fetching issue URL:', data.errors);
+        const data = response.data;
+        if (data.errors) {
+            console.error('Error fetching issue URL:', data.errors);
+            return null;
+        }
+
+        return data.data.node ? data.data.node.url : null;
+    } catch (error) {
+        console.error('Error during GraphQL request:', error);
         return null;
     }
-
-    return data.data.node ? data.data.node.url : null;
 }
 
 app.get('/', (req, res) => {
