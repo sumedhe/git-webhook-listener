@@ -109,9 +109,10 @@ async function updateIssueBody(issueUrl, newBodyContent) {
         // Append new checklist content only if the first line does not exist
         const checklist = readChecklist();
         if (checklist && !existingBody.includes(checklist.firstLine)) {
-            const updatedBody = `${existingBody}
+            const updatedBody = 
+`${existingBody}
 
-            ${checklist.fullContent}`;
+${checklist.fullContent}`;
 
             // Update the issue with the new body
             await axios.patch(url, {
