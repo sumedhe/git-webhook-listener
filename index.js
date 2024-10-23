@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const axios = require('axios'); // Using axios for API requests
 
+const APPEND_TEXT = '\nThis is the text to append.'; // Text to append to the issue
+
 // Load environment variables from .env file (optional)
 require('dotenv').config();
 
@@ -76,20 +78,34 @@ async function updateIssueBody(issueUrl, newBodyContent) {
 
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
 
+
     try {
-        const response = await axios.patch(
-            apiUrl,
-            { body: newBodyContent },
-            {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,  // Use 'token' for the authorization header
-                    'Content-Type': 'application/json'
-                }
+        // Fetch the existing issue data
+        const issueResponse = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
             }
-        );
-        console.log(`Issue body updated successfully: ${response.data.url}`);
+        });
+
+        const existingBody = issueResponse.data.body || '';
+
+        // Create the updated body
+        const updatedBody = existingBody + APPEND_TEXT;
+
+        // Update the issue with the new body
+        await axios.patch(`https://api.github.com/repos/${OWNER}/${REPO}/issues/${ISSUE_NUMBER}`, {
+            body: updatedBody
+        }, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        console.log('Issue updated successfully!');
     } catch (error) {
-        console.error('Error updating issue body:', error.response ? error.response.data : error.message);
+        console.error('Error updating the issue:', error.response ? error.response.data : error.message);
     }
 }
 
