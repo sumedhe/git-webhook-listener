@@ -72,9 +72,9 @@ async function getIssueDetails(contentNodeId) {
 async function updateIssueBody(issueUrl, newBodyContent) {
     // Extract the issue number and repository from the issue URL
     const issueUrlParts = issueUrl.split('/');
-    const owner = issueUrlParts[4];  // owner part of the URL
-    const repo = issueUrlParts[5];   // repository part of the URL
-    const issueNumber = issueUrlParts[7];  // issue number part of the URL
+    const owner = issueUrlParts[3];  // owner part of the URL
+    const repo = issueUrlParts[4];   // repository part of the URL
+    const issueNumber = issueUrlParts[6];  // issue number part of the URL
 
     try {
         const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
