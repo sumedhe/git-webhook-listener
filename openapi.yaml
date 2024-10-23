@@ -50,11 +50,3 @@ paths:
                 example: Signature mismatch!
       security:
         - webhookSecret: []
-components:
-  securitySchemes:
-    webhookSecret:
-      type: http
-      scheme: bearer
-      description: |
-        GitHub webhook secret for verifying the payload. The secret is passed in the
-        request headers via `x-hub-signature-256` and must be validated using HMAC SHA-256.

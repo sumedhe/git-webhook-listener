@@ -38,14 +38,16 @@ app.post('/webhook', (req, res) => {
     // const event = req.headers['x-github-event'];
 
     // Log the event for debugging
-    console.log(`Received event: ${event}`);
-    console.log('Payload:', req.body);
+    // console.log(`Received event: ${event}`);
+    // console.log('Payload:', req.body);
 
     // Do something with the webhook payload here
     // if (event === 'push') {
     //     console.log('Received a push event!');
     //     // Handle push event
     // }
+
+    console.log(req.body);
 
     // Respond with success
     res.status(200).send('Webhook received!');
