@@ -23,6 +23,7 @@ function verifySignature(req) {
 }
 
 app.get('/', (req, res) => {
+    console.log('GET /');
     res.send('GitHub Webhook Receiver');
 });
 
