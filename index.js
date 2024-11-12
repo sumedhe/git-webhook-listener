@@ -1,29 +1,37 @@
+/**
+ * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com).
+ *
+ * This software is the property of WSO2 LLC. and its suppliers, if any.
+ * Dissemination of any information or reproduction of any material contained
+ * herein in any form is strictly forbidden, unless permitted by WSO2 expressly.
+ * You may not alter or remove any copyright or other notice from copies of this content.
+ */
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const axios = require('axios'); // Using axios for API requests
-const fs = require('fs'); // File system module to read the checklist file
-
-// Load environment variables from .env file (optional)
-require('dotenv').config();
+const axios = require('axios');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Middleware to parse JSON body
+// Middleware to parse JSON body.
 app.use(bodyParser.json());
 
 // Get the webhook secret and GitHub token from environment variables
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // GitHub token for API requests
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;  // GitHub token to update the issue body
 const PROJECT_NODE_ID = process.env.PROJECT_NODE_ID; // Predefined project_node_id
 const CHECKLIST_FILE = 'checklist.md'; // Path to your checklist file
+const X_HUB_SIGNATURE_256 = 'x-hub-signature-256'; // Header for the GitHub signature
+const SHA256_HEADER_PREFIX = 'sha256='; // Prefix for the SHA-256 signature
 
 // Function to verify the signature
 function verifySignature(req) {
-    const signature = req.headers['x-hub-signature-256'];
+    const signature = req.headers[X_HUB_SIGNATURE_256];
     const hmac = crypto.createHmac('sha256', GITHUB_WEBHOOK_SECRET);
-    const digest = `sha256=${hmac.update(JSON.stringify(req.body)).digest('hex')}`;
+    const digest = `${SHA256_HEADER_PREFIX}${hmac.update(JSON.stringify(req.body)).digest('hex')}`;
     return signature === digest;
 }
 
@@ -84,7 +92,7 @@ function readChecklist() {
 }
 
 // Function to update the issue body by appending text
-async function updateIssueBody(issueUrl, newBodyContent) {
+async function updateIssueBody(issueUrl) {
     // Extract the issue number and repository from the issue URL
     const issueUrlParts = issueUrl.split('/');
     const owner = issueUrlParts[3];  // owner part of the URL
@@ -104,7 +112,6 @@ async function updateIssueBody(issueUrl, newBodyContent) {
         });
 
         const existingBody = issueResponse.data.body || '';
-        console.log('Existing issue body:', existingBody);
 
         // Append new checklist content only if the first line does not exist
         const checklist = readChecklist();
